@@ -1,0 +1,51 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 코드가 푸시되면 자동 실행
+    paths-ignore:
+      - 'README.md'  # 문서 수정시에는 파이프라인이 돌지 않도록 무시
+
+jobs:
+  build-and-push-docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          # 여기서 Buildx를 세팅하면 후속 스텝에서 캐싱 최적화를 지원합니다
+          install: true
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          # GitHub Secrets에 설정되어 있는 DOCKERHUB 아이디와 토큰 사용
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # 만들어질 도커 이미지의 이름 설정 (예: username/food-cal-api)
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/food-cal-api
+          # 매 푸시마다 'latest' 태그와 커밋 SHA 또는 날짜 기반의 버저닝 태그를 함께 생성하도록 설정할 수 있습니다.
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub Actions의 캐시를 사용하여 도커 빌드 속도를 대폭 개선
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
