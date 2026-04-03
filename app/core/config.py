@@ -10,3 +10,17 @@ FOOD_CALORIES = {
     "제육볶음": 800,
     "두쫀쿠": 500
 }
+
+IMAGENET_TO_FOOD = {
+    "pizza": "피자",
+    "hamburger": "햄버거",
+    "cheeseburger": "햄버거",
+    "hotdog": "햄버거",
+    "ice cream": "요아정",
+    "strawberry": "요아정",
+    "meat": "제육볶음",
+    "broccoli": "샐러드",
+    "cabbage": "샐러드",
+    "hen": "치킨",
+    "cock": "치킨"
+}
