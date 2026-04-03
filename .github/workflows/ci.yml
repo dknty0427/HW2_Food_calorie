@@ -49,3 +49,30 @@ jobs:
           # GitHub Actions의 캐시를 사용하여 도커 빌드 속도를 대폭 개선
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy-to-local:
+    needs: build-and-push-docker
+    runs-on: self-hosted
+    
+    steps:
+      - name: Log in to Docker Hub (Local Runner)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull latest Docker Image
+        run: docker pull ${{ secrets.DOCKERHUB_USERNAME }}/food-cal-api:latest
+        shell: powershell
+
+      - name: Stop and Remove old container
+        run: |
+          # 기존 컨테이너가 실행 중이거나 남아있다면 중지하고 삭제합니다.
+          docker ps -a -q --filter "name=food-cal-api-container" | ForEach-Object { docker stop $_; docker rm $_ }
+        shell: powershell
+
+      - name: Run new container
+        run: |
+          # 8000번 포트로 새 버전의 API 컨테이너를 백그라운드(-d) 실행합니다.
+          docker run -d --name food-cal-api-container -p 8000:8000 ${{ secrets.DOCKERHUB_USERNAME }}/food-cal-api:latest
+        shell: powershell
