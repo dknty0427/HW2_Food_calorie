@@ -1,4 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
+import os
 from app.core.config import FOOD_CALORIES
 import random
 
@@ -8,10 +10,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def read_root():
-    return {"message": "Food Calorie Classifier API 서버가 정상적으로 실행 중입니다."}
-
+    # 예쁜 웹 UI (인덱스 파일)를 반환합니다.
+    html_path = os.path.join(os.path.dirname(__file__), "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
 @app.get("/foods")
 def get_supported_foods():
     """현재 분류 가능한 음식 모델의 리스트와 칼로리 목록을 반환합니다."""

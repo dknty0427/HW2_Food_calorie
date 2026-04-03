@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Calorie AI</title>
+    <!-- 구글 폰트 적용 -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 90%;
+            max-width: 440px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: #333;
+        }
+        h1 { margin-top: 0; font-size: 28px; color: #fff; text-shadow: 1px 2px 4px rgba(0,0,0,0.15); }
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.8);
+            border-radius: 16px;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+            display: block;
+        }
+        .upload-area:hover { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .upload-area p { margin: 0; font-weight: 600; color: #fff; font-size: 16px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        input[type="file"] { display: none; }
+        
+        .preview {
+            display: none;
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border: 3px solid #fff;
+        }
+        
+        .btn {
+            background: #fff;
+            color: #FF758C;
+            border: none;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); color: #FF4B6B; }
+        .btn:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .result-box {
+            margin-top: 25px;
+            padding: 25px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 16px;
+            display: none;
+            animation: slideUp 0.5s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .food-name { font-size: 26px; font-weight: 800; color: #FF4B6B; margin-bottom: 8px; }
+        .food-cal { font-size: 18px; font-weight: 600; color: #666; }
+        
+        .spinner {
+            display: none; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.4);
+            border-radius: 50%; border-top-color: #FF4B6B; animation: spin 1s ease-in-out infinite; margin: 20px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🥗 Food Calorie AI</h1>
+    
+    <label class="upload-area" id="uploadArea">
+        <p>📷 이곳을 클릭하여 음식 사진 업로드</p>
+        <input type="file" id="fileInput" accept="image/*">
+    </label>
+    
+    <img id="imagePreview" class="preview" alt="미리보기">
+    
+    <button class="btn" id="analyzeBtn" disabled>사진 분석하기</button>
+    
+    <div class="spinner" id="spinner"></div>
+    
+    <div class="result-box" id="resultBox">
+        <div class="food-name" id="foodName"></div>
+        <div class="food-cal" id="foodCal"></div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadArea = document.getElementById('uploadArea');
+    const spinner = document.getElementById('spinner');
+    const resultBox = document.getElementById('resultBox');
+    const foodName = document.getElementById('foodName');
+    const foodCal = document.getElementById('foodCal');
+    let selectedFile = null;
+
+    fileInput.addEventListener('change', (e) => {
+        if(e.target.files.length > 0) {
+            selectedFile = e.target.files[0];
+            const url = URL.createObjectURL(selectedFile);
+            imagePreview.src = url;
+            imagePreview.style.display = 'block';
+            uploadArea.style.display = 'none';
+            analyzeBtn.disabled = false;
+            resultBox.style.display = 'none';
+        }
+    });
+
+    analyzeBtn.addEventListener('click', async () => {
+        if(!selectedFile) return;
+        
+        analyzeBtn.style.display = 'none';
+        spinner.style.display = 'block';
+        resultBox.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            foodName.textContent = `🍽️ ${data.classification}`;
+            foodCal.textContent = `칼로리: ${data.calories} kcal`;
+            resultBox.style.display = 'block';
+        } catch (err) {
+            alert('서버와 통신 중 에러가 발생했습니다.');
+        } finally {
+            spinner.style.display = 'none';
+            analyzeBtn.style.display = 'block';
+        }
+    });
+</script>
+
+</body>
+</html>
